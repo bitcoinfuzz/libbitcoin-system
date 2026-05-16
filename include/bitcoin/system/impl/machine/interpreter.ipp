@@ -227,7 +227,7 @@ op_return() const NOEXCEPT
 {
     if (this->is_enabled(flags::nops_rule))
         return op_unevaluated(opcode::op_return);
-        
+
     return error::op_not_implemented;
 }
 
@@ -439,7 +439,7 @@ op_roll() NOEXCEPT
 {
     size_t index;
 
-    // 998,[0,1,2,...,997,998,999] => {998} [0,1,2,...,997,998,999] 
+    // 998,[0,1,2,...,997,998,999] => {998} [0,1,2,...,997,998,999]
     if (!this->pop_index32(index))
         return error::op_roll;
 
@@ -821,7 +821,7 @@ op_num_equal_verify() NOEXCEPT
     if (!this->pop_binary32(left, right))
         return error::op_num_equal_verify1;
 
-    return (left == right) ? error::op_success : 
+    return (left == right) ? error::op_success :
         error::op_num_equal_verify2;
 }
 
@@ -1208,10 +1208,6 @@ op_check_locktime_verify() const NOEXCEPT
     if (!this->is_enabled(flags::bip65_rule))
         return op_nop(opcode::nop2);
 
-    // The tx sequence is 0xffffffff.
-    if (this->input().is_final())
-        return error::op_check_locktime_verify1;
-
     // The stack is empty.
     // The top stack item is negative.
     // Extend the (signed) script number range to 5 bytes.
@@ -1220,20 +1216,13 @@ op_check_locktime_verify() const NOEXCEPT
     if (!this->peek_unsigned40(stack_locktime40))
         return error::op_check_locktime_verify2;
 
-    const auto trans_locktime32 = this->tx().locktime();
-    using namespace chain;
+    const auto trans_locktime32 = state::tx().locktime();
 
-    // The stack locktime type differs from that of tx.
-    if ((stack_locktime40 < locktime_threshold) !=
-        (trans_locktime32 < locktime_threshold))
-        return error::op_check_locktime_verify3;
-
-    // The stack locktime is greater than the tx locktime.
-    if (stack_locktime40 > trans_locktime32)
-        return error::op_check_locktime_verify4;
-
-    // TODO: use sighash and key to generate signature in sign mode?
-    return error::op_success;
+    return state::checker().verify_locktime(
+        state::input().is_final(),
+        stack_locktime40,
+        trans_locktime32
+    );
 }
 
 TEMPLATE
@@ -1260,25 +1249,11 @@ op_check_sequence_verify() const NOEXCEPT
     if (get_right(stack_sequence32, relative_locktime_disabled_bit))
         return op_nop(opcode::nop3);
 
-    // The stack sequence is enabled and tx version less than 2.
-    if (this->tx().version() < relative_locktime_min_version)
-        return error::op_check_sequence_verify2;
-
-    // The transaction sequence is disabled.
-    if (get_right(input_sequence32, relative_locktime_disabled_bit))
-        return error::op_check_sequence_verify3;
-
-    // The stack sequence type differs from that of tx input.
-    if (get_right(stack_sequence32, relative_locktime_time_locked_bit) !=
-        get_right(input_sequence32, relative_locktime_time_locked_bit))
-        return error::op_check_sequence_verify4;
-
-    // The unmasked stack sequence is greater than that of tx sequence.
-    if (mask_left(stack_sequence32, relative_locktime_mask_left) >
-        mask_left(input_sequence32, relative_locktime_mask_left))
-        return error::op_check_sequence_verify5;
-
-    return error::op_success;
+    return state::checker().verify_sequence(
+        state::tx().version(),
+        stack_sequence32,
+        input_sequence32
+    );
 }
 
 TEMPLATE

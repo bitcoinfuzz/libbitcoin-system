@@ -67,7 +67,7 @@ run() NOEXCEPT
     return error::script_success;
 }
 
-// Operation disatch.
+// Operation dispatch.
 // ----------------------------------------------------------------------------
 // It is expected that the compiler will produce a very efficient jump table.
 

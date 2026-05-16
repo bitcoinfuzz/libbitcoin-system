@@ -38,15 +38,17 @@ namespace machine {
 // This expectation is guaranteed by the retained tx reference.
 TEMPLATE
 CLASS::program(const transaction& tx, const input_iterator& input,
-    uint32_t active_flags, const chain::signatures& capture) NOEXCEPT
+    uint32_t active_flags, const chain::signatures& capture,
+    const script_checker& checker) NOEXCEPT
   : transaction_(tx),
     input_(input),
     script_((*input)->script_ptr()),
     flags_(bit_and(active_flags, bip342_mask)),
     value_(max_uint64),
     version_(script_version::unversioned),
-    capture_(capture),
     spender_(true),
+    capture_(capture),
+    checker_(checker),
     primary_()
 {
     script_->clear_offset();
@@ -65,6 +67,7 @@ CLASS::program(const program& other, const script::cptr& script) NOEXCEPT
     value_(other.value_),
     version_(other.version_),
     capture_(other.capture_),
+    checker_(other.checker_),
     primary_(other.primary_)
 {
     script_->clear_offset();
@@ -80,6 +83,7 @@ CLASS::program(program&& other, const script::cptr& script) NOEXCEPT
     value_(other.value_),
     version_(other.version_),
     capture_(other.capture_),
+    checker_(other.checker_),
     primary_(std::move(other.primary_))
 {
     script_->clear_offset();
@@ -93,7 +97,7 @@ TEMPLATE
 CLASS::program(const transaction& tx, const input_iterator& input,
     const script::cptr& script, uint32_t active_flags,
     script_version version, const chunk_cptrs_ptr& witness,
-    const chain::signatures& capture) NOEXCEPT
+    const chain::signatures& capture, const script_checker& checker) NOEXCEPT
   : transaction_(tx),
     input_(input),
     script_(script),
@@ -102,6 +106,7 @@ CLASS::program(const transaction& tx, const input_iterator& input,
     version_(version),
     capture_(capture),
     witness_(witness),
+    checker_(checker),
     primary_(projection<Stack>(*witness))
 {
     script_->clear_offset();
@@ -116,7 +121,8 @@ TEMPLATE
 CLASS::program(const transaction& tx, const input_iterator& input,
     const script::cptr& script, uint32_t active_flags,
     script_version version, const chunk_cptrs_ptr& witness,
-    const hash_cptr& tapleaf, const chain::signatures& capture) NOEXCEPT
+    const hash_cptr& tapleaf, const chain::signatures& capture,
+    const script_checker& checker) NOEXCEPT
   : transaction_(tx),
     input_(input),
     script_(script),
@@ -126,6 +132,7 @@ CLASS::program(const transaction& tx, const input_iterator& input,
     capture_(capture),
     witness_(witness),
     tapleaf_(tapleaf),
+    checker_(checker),
     primary_(projection<Stack>(*witness)),
     budget_(ceilinged_add(
         add1(chain::signature_cost),

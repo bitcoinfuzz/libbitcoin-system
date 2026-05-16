@@ -1208,10 +1208,6 @@ op_check_locktime_verify() const NOEXCEPT
     if (!state::is_enabled(flags::bip65_rule))
         return op_nop(opcode::nop2);
 
-    // The tx sequence is 0xffffffff.
-    if (state::input().is_final())
-        return error::op_check_locktime_verify1;
-
     // The stack is empty.
     // The top stack item is negative.
     // Extend the (signed) script number range to 5 bytes.
@@ -1221,19 +1217,12 @@ op_check_locktime_verify() const NOEXCEPT
         return error::op_check_locktime_verify2;
 
     const auto trans_locktime32 = state::tx().locktime();
-    using namespace chain;
 
-    // The stack locktime type differs from that of tx.
-    if ((stack_locktime40 < locktime_threshold) !=
-        (trans_locktime32 < locktime_threshold))
-        return error::op_check_locktime_verify3;
-
-    // The stack locktime is greater than the tx locktime.
-    if (stack_locktime40 > trans_locktime32)
-        return error::op_check_locktime_verify4;
-
-    // TODO: use sighash and key to generate signature in sign mode?
-    return error::op_success;
+    return state::checker().verify_locktime(
+        state::input().is_final(),
+        stack_locktime40,
+        trans_locktime32
+    );
 }
 
 TEMPLATE
@@ -1260,25 +1249,11 @@ op_check_sequence_verify() const NOEXCEPT
     if (get_right(stack_sequence32, relative_locktime_disabled_bit))
         return op_nop(opcode::nop3);
 
-    // The stack sequence is enabled and tx version less than 2.
-    if (state::tx().version() < relative_locktime_min_version)
-        return error::op_check_sequence_verify2;
-
-    // The transaction sequence is disabled.
-    if (get_right(input_sequence32, relative_locktime_disabled_bit))
-        return error::op_check_sequence_verify3;
-
-    // The stack sequence type differs from that of tx input.
-    if (get_right(stack_sequence32, relative_locktime_time_locked_bit) !=
-        get_right(input_sequence32, relative_locktime_time_locked_bit))
-        return error::op_check_sequence_verify4;
-
-    // The unmasked stack sequence is greater than that of tx sequence.
-    if (mask_left(stack_sequence32, relative_locktime_mask_left) >
-        mask_left(input_sequence32, relative_locktime_mask_left))
-        return error::op_check_sequence_verify5;
-
-    return error::op_success;
+    return state::checker().verify_sequence(
+        state::tx().version(),
+        stack_sequence32,
+        input_sequence32
+    );
 }
 
 TEMPLATE

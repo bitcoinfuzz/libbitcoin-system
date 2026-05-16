@@ -118,7 +118,7 @@ verify_schnorr_signature(const data_chunk& point, const hash_digest& hash,
     const auto script = script_->to_string(chain::flags::all_rules);
     capture_.log((boost::format("UBACH [%1%] { %2% }") % threshold_.group % script).str());
     capture_.unbatched_schnorr.fetch_add(one, relaxed);
-    return schnorr::verify_signature(point, hash, signature);
+    return checker_.verify_schnorr_signature(point, hash, signature);
 }
 
 TEMPLATE

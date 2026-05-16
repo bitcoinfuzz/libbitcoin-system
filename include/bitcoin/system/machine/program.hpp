@@ -27,6 +27,7 @@
 #include <bitcoin/system/define.hpp>
 #include <bitcoin/system/hash/hash.hpp>
 #include <bitcoin/system/machine/stack.hpp>
+#include <bitcoin/system/machine/script_checker.hpp>
 
 namespace libbitcoin {
 namespace system {
@@ -47,7 +48,8 @@ public:
 
     /// Input script (default/empty stack).
     program(const transaction& transaction, const input_iterator& input,
-        uint32_t active_flags, const chain::signatures& capture) NOEXCEPT;
+        uint32_t active_flags, const chain::signatures& capture,
+        const script_checker& checker) NOEXCEPT;
 
     /// Legacy p2sh or prevout script (copied input stack).
     program(const program& other, const script::cptr& script) NOEXCEPT;
@@ -59,13 +61,15 @@ public:
     program(const transaction& transaction, const input_iterator& input,
         const script::cptr& script, uint32_t active_flags,
         script_version version, const chunk_cptrs_ptr& stack,
-        const chain::signatures& capture) NOEXCEPT;
+        const chain::signatures& capture,
+        const script_checker& checker) NOEXCEPT;
 
     /// Witness v1 (tapscript) script.
     program(const transaction& transaction, const input_iterator& input,
         const script::cptr& script, uint32_t active_flags,
         script_version version, const chunk_cptrs_ptr& stack,
-        const hash_cptr& tapleaf, const chain::signatures& capture) NOEXCEPT;
+        const hash_cptr& tapleaf, const chain::signatures& capture,
+        const script_checker& checker) NOEXCEPT;
 
     /// Program result.
     virtual bool is_true(bool clean) const NOEXCEPT;
@@ -93,6 +97,7 @@ protected:
     virtual INLINE const transaction& tx() const NOEXCEPT;
     virtual INLINE const chain::input& input() const NOEXCEPT;
     virtual INLINE bool is_enabled(flags flag) const NOEXCEPT;
+    INLINE const script_checker& checker() const NOEXCEPT;
 
     /// Primary stack.
     /// -----------------------------------------------------------------------
@@ -266,6 +271,7 @@ private:
     const hash_cptr tapleaf_{};
     const bool spender_{};
     const chain::signatures& capture_;
+    const script_checker& checker_;
 
     // Caches.
     mutable multisig_cache multisig_{};

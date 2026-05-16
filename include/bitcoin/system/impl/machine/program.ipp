@@ -127,6 +127,13 @@ is_enabled(flags flag) const NOEXCEPT
     return to_bool(flags_ & flag);
 }
 
+TEMPLATE
+INLINE const script_checker& CLASS::
+checker() const NOEXCEPT
+{
+    return checker_;
+}
+
 // Primary stack (conversions).
 // ----------------------------------------------------------------------------
 

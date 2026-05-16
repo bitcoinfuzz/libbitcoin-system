@@ -57,6 +57,20 @@ public:
         const chain::transaction& tx, const input_iterator& it,
         const chain::signatures& capture) NOEXCEPT;
 
+    /// Connect overloads that allow for a custom script checker to be passed in.
+    static code connect(const chain::context& state,
+        const chain::transaction& tx, uint32_t index,
+        const script_checker& checker) NOEXCEPT;
+
+    static code connect(const chain::context& state,
+        const chain::transaction& tx, const input_iterator& it,
+        const script_checker& checker) NOEXCEPT;
+
+    static code connect(const chain::context& state,
+        const chain::transaction& tx, const input_iterator& it,
+        const chain::signatures& capture,
+        const script_checker& checker) NOEXCEPT;
+
 protected:
     using flags = chain::flags;
     using opcode = chain::opcode;
@@ -72,7 +86,8 @@ protected:
     static code connect_witness(const chain::context& state,
         const chain::transaction& tx, const input_iterator& it,
         const chain::script& prevout, bool embedded,
-        const chain::signatures& capture) NOEXCEPT;
+        const chain::signatures& capture,
+        const script_checker& checker) NOEXCEPT;
 
     /// Operation disatch.
     virtual op_error_t run_op(const op_iterator& op) NOEXCEPT;

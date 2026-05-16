@@ -164,7 +164,7 @@ verify_schnorr_signature(const data_chunk& point, const hash_digest& hash,
         }
     }
 
-    return schnorr::verify_signature(point, hash, signature);
+    return checker_.verify_schnorr_signature(point, hash, signature);
 }
 
 TEMPLATE

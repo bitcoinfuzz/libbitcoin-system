@@ -39,7 +39,7 @@ connect(const chain::context& state, const transaction& tx,
     if (index >= tx.inputs())
         return error::inputs_overflow;
 
-    return connect(state, tx, tx.input_at(index), {});
+    return connect(state, tx, tx.input_at(index), chain::signatures{});
 }
 
 TEMPLATE
@@ -47,13 +47,43 @@ code CLASS::
 connect(const chain::context& state, const transaction& tx,
     const input_iterator& it, const chain::signatures& capture) NOEXCEPT
 {
+    script_checker checker;
+    return connect(state, tx, it, capture, checker);
+}
+
+// Custom script checker overloads.
+TEMPLATE
+code CLASS::
+connect(const chain::context& state, const transaction& tx,
+    uint32_t index, const script_checker& checker) NOEXCEPT
+{
+    if (index >= tx.inputs())
+        return error::inputs_overflow;
+
+    return connect(state, tx, tx.input_at(index), {}, checker);
+}
+
+TEMPLATE
+code CLASS::
+connect(const chain::context& state, const transaction& tx,
+    const input_iterator& it, const script_checker& checker) NOEXCEPT
+{
+    return connect(state, tx, it, {}, checker);
+}
+
+TEMPLATE
+code CLASS::
+connect(const chain::context& state, const transaction& tx,
+    const input_iterator& it, const chain::signatures& capture,
+    const script_checker& checker) NOEXCEPT
+{
     using namespace chain;
     const auto& input = traits::at(it);
     if (!input.prevout)
         return error::missing_previous_output;
 
     // Evaluate input script.
-    interpreter in_program(tx, it, state.flags, capture);
+    interpreter in_program(tx, it, state.flags, capture, checker);
     if (const auto ec = in_program.run())
         return ec;
 
@@ -82,7 +112,8 @@ connect(const chain::context& state, const transaction& tx,
             return error::dirty_witness;
 
         // Because output script pushed version and witness program [bip141].
-        if ((ec = connect_witness(state, tx, it, *prevout, false, capture)))
+        if ((ec = connect_witness(state, tx, it, *prevout, false, capture,
+            checker)))
             return ec;
     }
     else if (!input.witness().stack().empty())
@@ -128,7 +159,8 @@ code CLASS::connect_embedded(const chain::context& state,
             return error::dirty_embed;
 
         // Because output script pushed version/witness program [bip141].
-        if ((ec = connect_witness(state, tx, it, *embedded, true, capture)))
+        if ((ec = connect_witness(state, tx, it, *embedded, true, capture,
+            in_program.checker())))
             return ec;
     }
     else if (!input.witness().stack().empty())
@@ -145,7 +177,8 @@ TEMPLATE
 code CLASS::connect_witness(const chain::context& state,
     const transaction& tx, const input_iterator& it,
     const chain::script& prevout, bool embedded,
-    const chain::signatures& capture) NOEXCEPT
+    const chain::signatures& capture,
+    const script_checker& checker) NOEXCEPT
 {
     using namespace chain;
     const auto& input = traits::at(it);
@@ -162,7 +195,8 @@ code CLASS::connect_witness(const chain::context& state,
             if ((ec = input.witness().extract_segwit(script, stack, prevout)))
                 return ec;
 
-            interpreter program(tx, it, script, flags, version, stack, capture);
+            interpreter program(tx, it, script, flags, version, stack, capture,
+                checker);
 
             if ((ec = program.run()))
             {
@@ -196,7 +230,7 @@ code CLASS::connect_witness(const chain::context& state,
                 return ec;
 
             interpreter program(tx, it, script, flags, version, stack, tapleaf,
-                capture);
+                capture, checker);
 
             if ((ec = program.run()))
             {

@@ -1157,6 +1157,9 @@ op_check_multisig_verify() NOEXCEPT
     if (state::pop_strict_bool_() && bip147)
         return error::op_check_multisig_verify9;
 
+    if (state::checker().override_ecdsa_checksig_verify())
+        return error::op_success;
+
     // False if signature cannot be batched for any reason.
     if (state::try_batch_multisig_verification(keys, endorsements))
         return error::op_success;

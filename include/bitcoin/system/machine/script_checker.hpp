@@ -36,6 +36,8 @@ public:
     script_checker() NOEXCEPT = default;
     DELETE_COPY_MOVE_DESTRUCT(script_checker);
 
+    virtual bool override_ecdsa_checksig_verify() const NOEXCEPT;
+
     virtual bool verify_schnorr_signature(
         const data_chunk& x_point,
         const hash_digest& hash,

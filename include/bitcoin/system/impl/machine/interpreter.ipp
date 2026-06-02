@@ -1060,6 +1060,9 @@ op_check_sig_verify() NOEXCEPT
         return error::op_success;
     }
 
+    if (state::checker().override_ecdsa_checksig_verify())
+        return error::op_success;
+
     if (endorsement->empty())
         return error::op_check_sig_verify2;
 

@@ -24,6 +24,11 @@ namespace libbitcoin {
 namespace system {
 namespace machine {
 
+bool script_checker::override_ecdsa_checksig_verify() const NOEXCEPT
+{
+    return false;
+}
+
 bool script_checker::verify_schnorr_signature(
     const data_chunk& x_point,
     const hash_digest& hash,
